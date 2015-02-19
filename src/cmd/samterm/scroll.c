@@ -100,7 +100,7 @@ scrdraw(Flayer *l, long tot)
 void
 scroll(Flayer *l, int but)
 {
-	int in = 0, oin;
+	int in = 0, oin, n;
 	long tot = scrtotal(l);
 	Rectangle scr, r, s, rt;
 	int x, y, my, oy, h;
@@ -118,7 +118,7 @@ scroll(Flayer *l, int but)
 		in = abs(x-mousep->xy.x)<=FLSCROLLWID(l)/2;
 		if(oin && !in)
 			scrunmark(l, r);
-		if(in){
+		if(but > 3 || in){
 			scrmark(l, r);
 			oy = y;
 			my = mousep->xy.y;
@@ -126,9 +126,9 @@ scroll(Flayer *l, int but)
 				my = s.min.y;
 			if(my >= s.max.y)
 				my = s.max.y;
-			if(!eqpt(mousep->xy, Pt(x, my)))
+			if(in && !eqpt(mousep->xy, Pt(x, my)))
 				moveto(mousectl, Pt(x, my));
-			if(but == 1){
+			if(but == 1 || but == 4){
 				p0 = l->origin-frcharofpt(&l->f, Pt(s.max.x, my));
 				rt = scrpos(l->scroll, p0, p0+l->f.nchars, tot);
 				y = rt.min.y;
@@ -136,7 +136,7 @@ scroll(Flayer *l, int but)
 				y = my;
 				if(y > s.max.y-2)
 					y = s.max.y-2;
-			}else if(but == 3){
+			}else if(but == 3 || but == 5){
 				p0 = l->origin+frcharofpt(&l->f, Pt(s.max.x, my));
 				rt = scrpos(l->scroll, p0, p0+l->f.nchars, tot);
 				y = rt.min.y;
@@ -147,14 +147,14 @@ scroll(Flayer *l, int but)
 				scrmark(l, r);
 			}
 		}
-	}while(button(but));
-	if(in){
+	}while(but <= 3 && button(but));
+	if(but > 3 || in){
 		h = s.max.y-s.min.y;
 		scrunmark(l, r);
 		p0 = 0;
-		if(but == 1)
+		if(but == 1){
 			p0 = (long)(my-s.min.y)/l->f.font->height+1;
-		else if(but == 2){
+		}else if(but == 2){
 			if(tot > 1024L*1024L)
 				p0 = ((tot>>10)*(y-s.min.y)/h)<<10;
 			else
@@ -163,6 +163,18 @@ scroll(Flayer *l, int but)
 			p0 = l->origin+frcharofpt(&l->f, Pt(s.max.x, my));
 			if(p0 > tot)
 				p0 = tot;
+		}else if(but == 4){
+			but = 1;
+			n = mousescrollsize(l->f.maxlines);
+			if(n<=0)
+				n=1;
+			p0 = (long)n+1;
+		}else if(but == 5){
+			but = 3;
+			n = mousescrollsize(l->f.maxlines);
+			if(n<=0)
+				n=1;
+			p0 = l->origin+frcharofpt(&l->f, Pt(l->f.r.min.x, l->f.r.min.y+n*l->f.font->height));
 		}
 		scrorigin(l, but, p0);
 	}

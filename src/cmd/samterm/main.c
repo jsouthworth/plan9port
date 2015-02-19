@@ -108,19 +108,20 @@ threadmain(int argc, char *argv[])
 				continue;
 			}
 			nwhich = flwhich(mousep->xy);
-			scr = which && ptinrect(mousep->xy, which->scroll);
+			scr = which && (ptinrect(mousep->xy, which->scroll) ||
+                                mousep->buttons&(8|16));
 			if(mousep->buttons)
 				flushtyping(1);
 			if(chording && chord==1 && !mousep->buttons)
 				chord = 0;
 			if(chording && chord)
 				chord |= mousep->buttons;
-			else if(mousep->buttons&1){
+			else if(mousep->buttons&(1|8)){
 				if(nwhich){
 					if(nwhich!=which)
 						current(nwhich);
 					else if(scr)
-						scroll(which, 1);
+						scroll(which, (mousep->buttons&8) ? 4 : 1);
 					else{
 						t=(Text *)which->user1;
 						if(flselect(which)){
@@ -137,9 +138,9 @@ threadmain(int argc, char *argv[])
 					scroll(which, 2);
 				else
 					menu2hit();
-			}else if((mousep->buttons&4)){
+			}else if(mousep->buttons&(4|16)){
 				if(scr)
-					scroll(which, 3);
+					scroll(which, (mousep->buttons&16) ? 5 : 3);
 				else
 					menu3hit();
 			}
@@ -340,6 +341,9 @@ void
 scrorigin(Flayer *l, int but, long p0)
 {
 	Text *t=(Text *)l->user1;
+
+	if(t->tag == Untagged)
+		return;
 
 	switch(but){
 	case 1:
